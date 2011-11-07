@@ -1,0 +1,16 @@
+Ios2Junos - simple config scraper for Cisco IOS configs
+=======================================================
+toJunos.pl: 
+
+  takes an IOS configuration, extracts selected parameters from it (see toJunosXlate.cfg)
+  and creates an equivalent Junos XML configuration file.
+
+xmlToCurly.xsl
+
+  XSLT 2.0 stylesheet that converts Junos XML configuration file to curly braces format.
+  Use with an XSLT 2.0 processor (tested with Saxon)
+
+toJunosXlate.cfg
+
+  Scraping configuration. Matches parameters from Cisco IOS configuration and specifies
+  actions that have to be performed to create XML nodes in Junos XML configuration format.
