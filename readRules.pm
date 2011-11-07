@@ -10,19 +10,22 @@ my $grammar = q{
 rules: statement(s)
 statement: match | first | section
 
-section: 'section' <commit> pattern ( match | first ) ';'
+section: 'section' <commit> pattern match_or_first
+match_or_first: match | first { $return = $item[1]; }
+
 first:   'first' <commit> pattern action(s) ';'
 match:   'match' <commit> pattern action(s) ';'
 
-action:  set | create
+action:  set | add | create
 set:     'set' <commit> path '=' expr
+add:	 'add' <commit> path
 create:  'create' <commit> context path
 context: ('context' <commit>)(?)  { $return = ::rr_IsPresent($item[1]); }
 
-path:    /[A-Za-z0-9.\/-]+/  { $item[1] }
+path:    /[A-Za-z0-9.\/\[\]\$'=-]+/  { ::rr_MakeExpression($item[1]) }
 string:  /(\".*?\")|\w+/     { ::rr_RemoveQuotes($item[1]) }
 pattern: /\".*?\"|\w+/       { ::rr_MakePattern($item[1]) }
-expr:    /[A-Za-z0-9.\$-]+/  { ::rr_MakeExpression($item[1]) }
+expr:    /[A-Za-z0-9.\$\[\]-]+/  { ::rr_MakeExpression($item[1]) }
 };
 
 sub rr_IsPresent($) {
@@ -73,7 +76,10 @@ my $mapGrammar = q{
   { my $MG_hashTable = {}; }
   config: line(s) { $return = $MG_hashTable; }
   line:    comment | map
-  comment: '#' <commit> /.*?\n/
+
+  comment: '#' <commit> restOfLine(?)
+  restOfLine: ...!map /\n|(.*?\n)/ 
+
   map:     ifname '=>' <commit> ifname { $MG_hashTable->{$item[1]} = $item[4]; }
   ifname:  /[A-Za-z0-9.\/-]+/
 };

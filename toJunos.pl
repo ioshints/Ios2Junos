@@ -29,5 +29,6 @@ while(my $fn = shift @ARGV) {
   fixIPAddress($cfg);
   fixIfNames($cfg,$ifmap);
   my $xml = xlate($cfg,$rules);
-  print $xml->toString(1);
+  my $txt = $xml->toString(1); $txt =~ s!&#xBC;!/!g; # Fix stupid XPath bug
+  print $txt;
 }
