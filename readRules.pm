@@ -11,14 +11,15 @@ rules: statement(s)
 statement: match | first | section
 
 section: 'section' <commit> pattern match_or_first
-match_or_first: match | first { $return = $item[1]; }
+match_or_first: match | first
 
 first:   'first' <commit> pattern action(s) ';'
 match:   'match' <commit> pattern action(s) ';'
 
-action:  set | add | create
+action:  set | add | delete | create
 set:     'set' <commit> path '=' expr
 add:	 'add' <commit> path
+delete:  'delete' <commit> path
 create:  'create' <commit> context path
 context: ('context' <commit>)(?)  { $return = ::rr_IsPresent($item[1]); }
 

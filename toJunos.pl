@@ -5,6 +5,7 @@ use Data::Dumper;
 use NetAddr::IP;
 use XML::LibXML;
 use File::Basename;
+use File::Slurp;
 use Getopt::Long;
 
 BEGIN { $::scriptDir = dirname($0); push @INC,$::scriptDir; }
@@ -19,7 +20,8 @@ GetOptions('verbose'  => \$::opt_verbose,
            'debug'    => \$::opt_debug,
            'xDebug'   => \$::opt_xDebug,
            'naming=s' => \$::opt_ifname,
-           'config=s' => \$::opt_config);
+           'config=s' => \$::opt_config,
+	   'batch'    => \$::opt_batch);
 
 $ifmap = readInterfaceMap(findConfigFile($::opt_ifname || 'toJunosIfname.cfg'));
 $rules = readRules(findConfigFile($::opt_config || 'toJunosXlate.cfg'));
@@ -30,5 +32,9 @@ while(my $fn = shift @ARGV) {
   fixIfNames($cfg,$ifmap);
   my $xml = xlate($cfg,$rules);
   my $txt = $xml->toString(1); $txt =~ s!&#xBC;!/!g; # Fix stupid XPath bug
-  print $txt;
+  if ($::opt_batch) {
+    write_file("$fn.junos.xml",\$txt); 
+  } else {
+    print $txt;
+  }
 }
