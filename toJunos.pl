@@ -17,6 +17,7 @@ our ($ifmap,$rules);
 
 GetOptions('verbose'  => \$::opt_verbose,
            'debug'    => \$::opt_debug,
+           'xDebug'   => \$::opt_xDebug,
            'naming=s' => \$::opt_ifname,
            'config=s' => \$::opt_config);
 

@@ -35,7 +35,8 @@ sub xlate($$) {
       if ($act->{set}) {
         xNodeSet($act->{set}->{path},$act->{set}->{expr});
       } elsif ($act->{create}) {
-        $ctx = xNodeCreate($act->{create}->{path});
+        my $new = xNodeCreate($act->{create}->{path}); 
+        $ctx = $new if $act->{create}->{context};
       }
     }
   }

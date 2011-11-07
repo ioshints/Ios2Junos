@@ -16,14 +16,22 @@ match:   'match' <commit> pattern action(s) ';'
 
 action:  set | create
 set:     'set' <commit> path '=' expr
-create:  'create' <commit> context(?) path
-context: 'context' <commit>
+create:  'create' <commit> context path
+context: ('context' <commit>)(?)  { $return = ::rr_IsPresent($item[1]); }
 
 path:    /[A-Za-z0-9.\/-]+/  { $item[1] }
 string:  /(\".*?\")|\w+/     { ::rr_RemoveQuotes($item[1]) }
 pattern: /\".*?\"|\w+/       { ::rr_MakePattern($item[1]) }
 expr:    /[A-Za-z0-9.\$-]+/  { ::rr_MakeExpression($item[1]) }
 };
+
+sub rr_IsPresent($) {
+  my $val = shift;
+  return "" unless $val;
+  return $val unless ref $val;
+  return "wtf" unless ref $val eq "ARRAY";
+  return $#{$val} >= 0 ? "yes" : "";
+}
 
 sub rr_RemoveQuotes($) {
   my $txt = shift;
@@ -55,7 +63,7 @@ sub readRules($) {
 
   my $rules  = read_file($fname) || die "Cannot read fules file $fname: $!\n";
   my $tree = $parser->rules(\$rules) || die "Cannot parse rule file: $!\n";
-#  print Dumper($tree);
+  print Dumper($tree) if $::opt_xDebug;
   $rules =~ s/\s+$//g;
   die "Parsing error, first offending rule:\n  ".substr($rules,0,70)."\n" if $rules;
   return $tree;
@@ -79,6 +87,8 @@ sub readInterfaceMap($) {
 
   my $ifmap  = read_file($fname) || die "Cannot read interface mapping file $fname: $!\n";
   my $tree = $parser->config(\$ifmap) || die "Cannot parse interface mapping file: $!\n";
+  print Dumper($tree) if $::opt_xDebug;
+
   $ifmap =~ s/\s+$//g;
   die "Parsing error, first offending interface map:\n  ".substr($ifmap,0,70)."\n" if $ifmap;
   return $tree;
