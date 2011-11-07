@@ -11,18 +11,25 @@
 
   <node id="rpc-reply"     ignore="yes" special="yes" />
   <node id="configuration" ignore="yes" special="yes" />
-  <node id="version"       ignore="yes" special="yes" />
+<!--  <node id="version"       ignore="yes" special="yes" /> -->
 
   <node id="authentication-order" type="list" />
   <node id="events" type="list" />
+  <node id="apply-groups" type="list" />
+  <node id="permissions" type="list" />
 
   <node id="logical-systems" type="explode" extra="yes" />
+  <node id="tacplus-server" type="explode" extra="yes" />
+  <node id="name-server" type="explode" extra="yes" />
+  <node id="groups" type="explode" extra="yes" />
 </xsl:variable>
 
 <xsl:key name="nodeType" match="node" use="@id" />
 
 <!-- match objects with numerous attributes -->
-<xsl:template match="*[name or */* or */text()]" priority="-5"><xsl:call-template name="configObject" /></xsl:template>
+<xsl:template match="*[name or */* or */text()]" priority="-5">
+  <xsl:call-template name="configObject" />
+</xsl:template>
 
 <!-- match a simple object - value pair -->
 <xsl:template match="*" priority="-20">
@@ -68,6 +75,20 @@
   </xsl:if>
 </xsl:template>
 
+<!-- exploded objects where the 'name' tag names the child hierarchy -->
+<xsl:template match="*[key('nodeType',local-name(),$config)/@type = 'explode']" name="explodedObject">
+  <xsl:variable name="nodeName" select="local-name()" />
+  <xsl:if test="count(preceding-sibling::*[local-name() = $nodeName]) = 0">
+    <xsl:call-template name="writeIndent"><xsl:with-param name="noSpecial">1</xsl:with-param></xsl:call-template>
+    <xsl:value-of select="local-name()" /><xsl:text> {&#x0A;</xsl:text>
+    <xsl:for-each select="../*[local-name() = $nodeName]">
+      <xsl:call-template name="configObject"><xsl:with-param name="skipName">yes</xsl:with-param></xsl:call-template>
+    </xsl:for-each>
+    <xsl:call-template name="writeIndent"><xsl:with-param name="noSpecial">1</xsl:with-param></xsl:call-template>
+    <xsl:text>}&#x0A;</xsl:text>
+  </xsl:if>
+</xsl:template>
+
 <!-- exceptions -->
 <!-- family uses child tags as names -->
 <xsl:template match="family">
@@ -93,19 +114,6 @@
   <xsl:call-template name="configObject"><xsl:with-param name="skipName">yes</xsl:with-param></xsl:call-template>
 </xsl:template>
 
-<!-- exploded objects where the 'name' tag names the child hierarchy -->
-<xsl:template match="*[key('nodeType',local-name(),$config)/@type = 'explode']" name="explodedObject">
-  <xsl:variable name="nodeName" select="local-name()" />
-  <xsl:if test="count(preceding-sibling::*[local-name() = $nodeName]) = 0">
-    <xsl:call-template name="writeIndent" />
-    <xsl:value-of select="local-name()" /><xsl:text> {&#x0A;</xsl:text>
-    <xsl:for-each select="../*[local-name() = $nodeName]">
-      <xsl:call-template name="configObject"><xsl:with-param name="skipName">yes</xsl:with-param></xsl:call-template>
-    </xsl:for-each>
-    <xsl:text>}&#x0A;</xsl:text>
-  </xsl:if>
-</xsl:template>
-
 <!-- totally non-standard constructs -->
 <xsl:template match="member-range">
   <xsl:call-template name="writeIndent" />
@@ -126,7 +134,7 @@
   <xsl:text>autonomous-system </xsl:text><xsl:value-of select="as-number" /><xsl:text>;&#x0A;</xsl:text>
 </xsl:template>
 
-<xsl:template match="snmp/community/clients | snmp/trap-group/targets | system/tacplus-server | tacplus/server">
+<xsl:template match="snmp/community/clients | snmp/trap-group/targets | tacplus/server">
   <xsl:call-template name="explodedObject" />
 </xsl:template>
 
@@ -158,7 +166,10 @@
 
 <!-- create (approximate) whitespace indent -->
 <xsl:template name="writeIndent">
-  <xsl:if test="key('nodeType',local-name(),$config)/@extra"><xsl:text>    </xsl:text></xsl:if>
+  <xsl:param name="noSpecial" />
+  <xsl:if test="key('nodeType',local-name(),$config)/@extra">
+    <xsl:if test="not($noSpecial)"><xsl:text>    </xsl:text></xsl:if>
+  </xsl:if>
   <xsl:for-each select="ancestor::*">
     <xsl:if test="not(key('nodeType',local-name(),$config)/@special)"><xsl:text>    </xsl:text></xsl:if>
     <xsl:if test="key('nodeType',local-name(),$config)/@extra"><xsl:text>    </xsl:text></xsl:if>

@@ -51,12 +51,44 @@ sub readRules($) {
 
 #  $::RD_TRACE = 1;
   my $parser = new Parse::RecDescent($grammar) || die "Bad grammar";
+  print STDERR "Reading configuration scraping rules from $fname\n" if $::opt_verbose;
+
   my $rules  = read_file($fname) || die "Cannot read fules file $fname: $!\n";
   my $tree = $parser->rules(\$rules) || die "Cannot parse rule file: $!\n";
 #  print Dumper($tree);
   $rules =~ s/\s+$//g;
   die "Parsing error, first offending rule:\n  ".substr($rules,0,70)."\n" if $rules;
   return $tree;
+}
+
+my $mapGrammar = q{
+  { my $MG_hashTable = {}; }
+  config: line(s) { $return = $MG_hashTable; }
+  line:    comment | map
+  comment: '#' <commit> /.*?\n/
+  map:     ifname '=>' <commit> ifname { $MG_hashTable->{$item[1]} = $item[4]; }
+  ifname:  /[A-Za-z0-9.\/-]+/
+};
+
+sub readInterfaceMap($) {
+  my $fname = shift;
+
+#  $::RD_TRACE = 1;
+  my $parser = new Parse::RecDescent($mapGrammar) || die "Bad grammar";
+  print STDERR "Reading interface name mapping from $fname\n" if $::opt_verbose;
+
+  my $ifmap  = read_file($fname) || die "Cannot read interface mapping file $fname: $!\n";
+  my $tree = $parser->config(\$ifmap) || die "Cannot parse interface mapping file: $!\n";
+  $ifmap =~ s/\s+$//g;
+  die "Parsing error, first offending interface map:\n  ".substr($ifmap,0,70)."\n" if $ifmap;
+  return $tree;
+}
+
+sub findConfigFile($) {
+  my $fname = shift;
+  return $fname if (-e $fname);
+  return "$::scriptDir/$fname" if (-e "$::scriptDir/$fname");
+  die "Cannot file $fname in current or script directory\n";
 }
 
 1;
